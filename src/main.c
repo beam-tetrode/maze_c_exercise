@@ -2,7 +2,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-#define ERROR_STR_LEN 32
+#define ERROR_STR_LEN 64
 typedef struct x_y_type {
     int x;
     int y;
@@ -34,6 +34,8 @@ int maze_sanity_check(const matrix *const data_in)
         }
     }
 
+    int start = 0;
+    int exit = 0;
     for (size_t i = 0; i < data_in->line_count; i++) {
         if (data_in->matrix[i][0] != '#' && data_in->matrix[i][0] != 'E') {
             strncpy(error_str, "Row start\n", ERROR_STR_LEN);
@@ -52,7 +54,19 @@ int maze_sanity_check(const matrix *const data_in)
                 strncpy(error_str, "Invalid characters\n", ERROR_STR_LEN);
                 goto return_exit_failure;
             }
+
+            if (data_in->matrix[i][j] == '^') {
+                start = 1;
+            }
+            if (data_in->matrix[i][j] == 'E') {
+                exit = 1;
+            }
         }
+    }
+
+    if (start != 1 || exit != 1) {
+        strncpy(error_str, "start or exit\n", ERROR_STR_LEN);
+        goto return_exit_failure;
     }
 
     for (size_t i = 0; i < row_len; i++) {
@@ -81,11 +95,11 @@ int find_start_coordinate(const matrix *const data_in, x_y *const coordinates_ou
 {
     int row = 0;
     int column = -1;
-    int ret = EXIT_SUCCESS;
+    char error_str[ERROR_STR_LEN];
 
     if (data_in->matrix == NULL) {
-        printf("Error: data uninitialized\n");
-        return EXIT_FAILURE;
+        strncpy(error_str, "Data uninitialized\n", ERROR_STR_LEN);
+        goto return_exit_failure;
     }
 
     for (int i = 0; i < data_in->line_count; i++) {
@@ -107,14 +121,14 @@ int find_start_coordinate(const matrix *const data_in, x_y *const coordinates_ou
         #endif
         coordinates_out->x = column;
         coordinates_out->y = row;
-    } else {
-        #ifdef DEBUG
-            printf("The '^' character was not found in the file.\n");
-        #endif
-        ret = EXIT_FAILURE;
     }
 
-    return ret;
+    return EXIT_SUCCESS;
+
+    return_exit_failure:
+        printf("Error: %s", error_str);
+        return EXIT_FAILURE;
+
 }
 
 int handle_file_input(matrix *data_out)
@@ -122,11 +136,12 @@ int handle_file_input(matrix *data_out)
     char file_path[512];
     const int capacity = 256;
     char buffer[capacity];
+    char error_str[ERROR_STR_LEN];
 
     printf("Enter path to maze text file: (maximum 512 characters)");
     if (fgets(file_path, sizeof(file_path), stdin) == NULL) {
-        printf("Error reading the input file.\n");
-        return EXIT_FAILURE;
+        strncpy(error_str, " Reading the input file.\n", ERROR_STR_LEN);
+        goto return_exit_failure;
     }
 
     size_t len = strlen(file_path);
@@ -136,8 +151,8 @@ int handle_file_input(matrix *data_out)
 
     FILE *file = fopen(file_path, "r");
     if (file == NULL) {
-        printf("Error opening the input file.\n");
-        return 1;
+        strncpy(error_str, "Opening the input file.\n", ERROR_STR_LEN);
+        goto return_exit_failure;
     } else {
         #ifdef DEBUG
             printf("File opened successfully in read-only mode.\n");
@@ -146,9 +161,9 @@ int handle_file_input(matrix *data_out)
 
     data_out->matrix = (char**)malloc(capacity * sizeof(char *));
     if (data_out->matrix == NULL) {
-        printf("Error allocating memory for matrix.");
         fclose(file);
-        return EXIT_FAILURE;
+        strncpy(error_str, "Allocating memory for matrix.\n", ERROR_STR_LEN);
+        goto return_exit_failure;
     }
 
     while (fgets(buffer, capacity, file) != NULL) {
@@ -156,9 +171,9 @@ int handle_file_input(matrix *data_out)
 
         data_out->matrix[data_out->line_count] = malloc((strlen(buffer) + 1) * sizeof(char));
         if (data_out->matrix[data_out->line_count] == NULL) {
-            printf("Error allocating memory for matrix row.\n");
             fclose(file);
-            return EXIT_FAILURE;
+            strncpy(error_str, "Allocating memory for matrix row.\n", ERROR_STR_LEN);
+            goto return_exit_failure;
         }
         strcpy(data_out->matrix[data_out->line_count], buffer);
         data_out->line_count++;
@@ -167,6 +182,11 @@ int handle_file_input(matrix *data_out)
     fclose(file);
 
     return EXIT_SUCCESS;
+
+    return_exit_failure:
+        printf("Error: %s", error_str);
+        return EXIT_FAILURE;
+
 }
 
 int main()
