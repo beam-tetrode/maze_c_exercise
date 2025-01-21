@@ -3,6 +3,8 @@
 #include <string.h>
 
 #define ERROR_STR_LEN 64
+#define READ_CAPACITY 256
+
 typedef struct x_y_type {
     int x;
     int y;
@@ -13,6 +15,7 @@ typedef struct x_y_type {
 typedef struct matrix_type {
     char **matrix;
     int line_count;
+    int line_length;
 } matrix;
 
 // A maze is a:
@@ -25,7 +28,7 @@ typedef struct matrix_type {
 int maze_sanity_check(const matrix *const data_in)
 {
     char error_str[ERROR_STR_LEN];
-    const size_t row_len = strlen(data_in->matrix[0]);
+    const size_t row_len = data_in->line_length;
 
     for (size_t i = 1; i < data_in->line_count; i++) {
         if (strlen(data_in->matrix[i]) != row_len) {
@@ -134,8 +137,7 @@ int find_start_coordinate(const matrix *const data_in, x_y *const coordinates_ou
 int handle_file_input(matrix *data_out)
 {
     char file_path[512];
-    const int capacity = 256;
-    char buffer[capacity];
+    char buffer[READ_CAPACITY];
     char error_str[ERROR_STR_LEN];
 
     printf("Enter path to maze text file: (maximum 512 characters)");
@@ -159,14 +161,14 @@ int handle_file_input(matrix *data_out)
         #endif
     }
 
-    data_out->matrix = (char**)malloc(capacity * sizeof(char *));
+    data_out->matrix = (char**)malloc(READ_CAPACITY * sizeof(char *));
     if (data_out->matrix == NULL) {
         fclose(file);
         strncpy(error_str, "Allocating memory for matrix.\n", ERROR_STR_LEN);
         goto return_exit_failure;
     }
 
-    while (fgets(buffer, capacity, file) != NULL) {
+    while (fgets(buffer, READ_CAPACITY, file) != NULL) {
         buffer[strcspn(buffer, "\n")] = '\0';
 
         data_out->matrix[data_out->line_count] = malloc((strlen(buffer) + 1) * sizeof(char));
@@ -180,6 +182,8 @@ int handle_file_input(matrix *data_out)
     }
 
     fclose(file);
+
+    data_out->line_length = strlen(data_out->matrix[0]);
 
     return EXIT_SUCCESS;
 
@@ -210,7 +214,7 @@ int main()
         #ifdef DEBUG
             printf("%s\n", data.matrix[i]);            
         #endif
-        free(data.matrix[i]);
+        free(data.matrix[i]); // Remeber this or all hell is loose
     }
     free(data.matrix);
 
