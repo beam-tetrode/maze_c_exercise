@@ -6,31 +6,34 @@
 #define ERROR_STR_LEN 64
 #define READ_CAPACITY 256
 
-enum direction_ {
+enum direction_state {
     UP = 0,
     LEFT = 1,
     DOWN = 2,
-    RIGHT = 3
+    RIGHT = 3,
+    CANT_MOVE = -1
 };
 
-typedef struct x_y_type {
+typedef struct x_y_pos {
     int x;
     int y;
 } x_y;
 
-typedef struct matrix_type {
+typedef struct matrix_data {
     char **matrix;
     int line_count;
     int line_length;
 } matrix;
 
+//*****************************************************************************/
 // A maze is a:
 // * Line that starts and ends with #- or E-character.
-// * Rectangular, same lenght lines.
+// * Rectangular, same length lines.
 // * Only contains #-, E-, ^- and underscore characters
 // * Has multiple exits
 // * Only one input
 // * First and last row contains only #-, ^- and E-characters
+//*****************************************************************************/
 int maze_sanity_check(const matrix *const data_in)
 {
     char error_str[ERROR_STR_LEN];
@@ -100,6 +103,11 @@ int maze_sanity_check(const matrix *const data_in)
 
 }
 
+//*****************************************************************************/
+// Find the start coordinated from input data
+// When coordinates found, return success
+//
+//*****************************************************************************/
 int find_start_coordinate(const matrix *const data_in, x_y *const coordinates_out)
 {
     int row = 0;
@@ -130,6 +138,9 @@ int find_start_coordinate(const matrix *const data_in, x_y *const coordinates_ou
         #endif
         coordinates_out->x = column;
         coordinates_out->y = row;
+    } else {
+        strncpy(error_str, "No start point\n", ERROR_STR_LEN);
+        goto return_exit_failure;
     }
 
     return EXIT_SUCCESS;
@@ -140,6 +151,11 @@ int find_start_coordinate(const matrix *const data_in, x_y *const coordinates_ou
 
 }
 
+//*****************************************************************************/
+// Read the data from input file
+// * Data read to buffer, return success
+//
+//*****************************************************************************/
 int handle_file_input(matrix *data_out)
 {
     char file_path[512];
@@ -161,10 +177,6 @@ int handle_file_input(matrix *data_out)
     if (file == NULL) {
         strncpy(error_str, "Opening the input file.\n", ERROR_STR_LEN);
         goto return_exit_failure;
-    } else {
-        #ifdef DEBUG
-            printf("File opened successfully in read-only mode.\n");
-        #endif
     }
 
     data_out->matrix = (char**)malloc(READ_CAPACITY * sizeof(char *));
@@ -179,12 +191,17 @@ int handle_file_input(matrix *data_out)
 
         data_out->matrix[data_out->line_count] = malloc((strlen(buffer) + 1) * sizeof(char));
         if (data_out->matrix[data_out->line_count] == NULL) {
+            for (int j = 0; j < data_out->line_count; j++) {
+                free(data_out->matrix[j]);
+            }
+            free(data_out->matrix);
             fclose(file);
             strncpy(error_str, "Allocating memory for matrix row.\n", ERROR_STR_LEN);
             goto return_exit_failure;
+        } else {
+            strcpy(data_out->matrix[data_out->line_count], buffer);
+            data_out->line_count++;
         }
-        strcpy(data_out->matrix[data_out->line_count], buffer);
-        data_out->line_count++;
     }
 
     fclose(file);
@@ -198,6 +215,13 @@ int handle_file_input(matrix *data_out)
         return EXIT_FAILURE;
 
 }
+
+//*****************************************************************************/
+// Check the possible move directions
+// * return first possible free direction
+// * If not possible to move return -1
+//
+//*****************************************************************************/
 int where_to_go(const matrix *const maze, const x_y *const pos)
 {
     int direction = -1;
@@ -215,6 +239,10 @@ int where_to_go(const matrix *const maze, const x_y *const pos)
     return direction;
 }
 
+//*****************************************************************************/
+// Move functions
+//
+//*****************************************************************************/
 int move_up(const matrix *const maze, x_y *pos)
 {
     if ((pos->y - 1) >= 0 &&
@@ -225,6 +253,7 @@ int move_up(const matrix *const maze, x_y *pos)
     }
     return 0;
 }
+
 int move_left(const matrix *const maze, x_y *pos)
 {
     if ((pos->x - 1) >= 0 &&
@@ -235,6 +264,7 @@ int move_left(const matrix *const maze, x_y *pos)
     }
     return 0;
 }
+
 int move_down(const matrix *const maze, x_y *pos)
 {
     if ((pos->y + 1) < maze->line_count && 
@@ -245,6 +275,7 @@ int move_down(const matrix *const maze, x_y *pos)
     }
     return 0;
 }
+
 int move_right(const matrix *const maze, x_y *pos)
 {
     if ((pos->x + 1) < maze->line_length &&
@@ -256,6 +287,33 @@ int move_right(const matrix *const maze, x_y *pos)
     return 0;
 }
 
+int step_back(int direction)
+{
+    switch (direction) {
+        case UP:
+            direction = DOWN;
+            break;
+        case DOWN:
+            direction = UP;
+            break;
+        case LEFT:
+            direction = RIGHT;
+            break;
+        case RIGHT:
+            direction = LEFT;
+            break;
+        default:
+            direction = UP;
+            break;
+    }
+
+    return direction;
+}
+
+//*****************************************************************************/
+// Move algorithm
+//
+//*****************************************************************************/
 int move_algorithm(int moves, matrix *const maze, x_y pos)
 {
     char error_str[ERROR_STR_LEN];
@@ -267,7 +325,6 @@ int move_algorithm(int moves, matrix *const maze, x_y pos)
     move_fPtr[DOWN] = move_down;
     move_fPtr[RIGHT] = move_right;
 
-    int moved = 0;
     int direction = UP;
     int route_back[200] = {0};
     int route_back_index = 0;
@@ -276,27 +333,26 @@ int move_algorithm(int moves, matrix *const maze, x_y pos)
     route_back_index++;
     int go_back = 0;
 
-    while (moves)
-    {
+    while (moves) {
         direction = where_to_go(maze, &pos);
-        if (direction == -1) {
+        if (direction == CANT_MOVE) {
             go_back = 1;
-            direction = route_back[route_back_index];
+            direction = step_back(route_back[route_back_index]);
             route_back_index--;
-            if (direction == UP) direction = DOWN;
-            else if (direction == DOWN) direction = UP;
-            else if (direction == LEFT) direction = RIGHT;
-            else if (direction == RIGHT) direction = LEFT;
         } else {
             go_back = 0;
         }
 
-        maze->matrix[pos.y][pos.x] = '*';
-        moved = (*move_fPtr[direction])(maze, &pos);
-        if (moved)
-        {
+        if (maze->matrix[pos.y][pos.x] == 'E') {
+            printf("Freedom at last!\n");
+            break;
+        } else {
+            maze->matrix[pos.y][pos.x] = '*';
+        }
+
+        if ((*move_fPtr[direction])(maze, &pos)) {
             moves--;
-            if (!go_back) {
+            if (go_back == 0) {
                 route_back[route_back_index] = direction;
                 route_back_index++;
             }
@@ -315,31 +371,41 @@ int move_algorithm(int moves, matrix *const maze, x_y pos)
         return EXIT_FAILURE;
 }
 
+//*****************************************************************************/
+// Initialize moving in the maze
+//
+//*****************************************************************************/
 int move_in_maze(int moves, const matrix *const data_in, x_y *const coordinates)
 {
-    char error_str[ERROR_STR_LEN];
+    int ret = EXIT_SUCCESS;
 
     matrix data = {.matrix = NULL, .line_count = data_in->line_count, .line_length = data_in->line_length};
 
     data.matrix = (char**)malloc(READ_CAPACITY * sizeof(char *));
     if (data.matrix == NULL) {
-        strncpy(error_str, "Allocating memory for matrix.\n", ERROR_STR_LEN);
-        goto return_exit_failure;
+        printf("Error: Allocating memory for data.\n");
+        return EXIT_FAILURE;
     }
-    size_t lenght = strlen(data_in->matrix[0]) + 1;
+
+    size_t length = strlen(data_in->matrix[0]) + 1;
 
     for (size_t i = 0; i < data.line_count; i++) {
-        data.matrix[i] = malloc(lenght * sizeof(char));
+        data.matrix[i] = malloc(length * sizeof(char));
         if (data.matrix[i] == NULL) {
-            strncpy(error_str, "Allocating memory for matrix row.\n", ERROR_STR_LEN);
-            goto return_exit_failure;
+            for (size_t j = 0; j < i; j++) {
+                free(data.matrix[j]);
+            }
+            free(data.matrix);
+            printf("Error: Allocating memory for matrix row.\n");
+            return EXIT_FAILURE;
+        } else {
+            strncpy(data.matrix[i], data_in->matrix[i], length);
         }
-        strncpy(data.matrix[i], data_in->matrix[i], lenght);
     }
 
     if (move_algorithm(moves, &data, *coordinates) != EXIT_SUCCESS) {
-        strncpy(error_str, "Algorithm.\n", ERROR_STR_LEN);
-        goto return_exit_failure;
+        printf("Error: Algorithm.\n");
+        ret = EXIT_FAILURE;
     }
 
     printf("\n");
@@ -350,17 +416,13 @@ int move_in_maze(int moves, const matrix *const data_in, x_y *const coordinates)
     printf("\n");
     free(data.matrix);
 
-    return EXIT_SUCCESS;
-
-    return_exit_failure:
-        for (int i = 0; i < data.line_count; i++) {
-            free(data.matrix[i]);
-        }
-        free(data.matrix);
-        printf("Error: %s", error_str);
-        return EXIT_FAILURE;
+    return ret;
 }
 
+//*****************************************************************************/
+// Entry function
+//
+//*****************************************************************************/
 int main()
 {
     matrix data = {.matrix = NULL, .line_count = 0};
