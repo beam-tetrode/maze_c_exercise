@@ -6,8 +6,7 @@
 #define ERROR_STR_LEN 64
 #define READ_CAPACITY 256
 
-enum direction_
-{
+enum direction_ {
     UP = 0,
     LEFT = 1,
     DOWN = 2,
@@ -202,34 +201,16 @@ int handle_file_input(matrix *data_out)
 int where_to_go(const matrix *const maze, const x_y *const pos)
 {
     int direction = -1;
+
     if ((pos->y + 1) < maze->line_count && maze->matrix[pos->y + 1][pos->x] == ' ') {
         direction = DOWN;
-    } else
-    if ((pos->x + 1) < maze->line_length && maze->matrix[pos->y][pos->x + 1] == ' ') {
+    } else if ((pos->x + 1) < maze->line_length && maze->matrix[pos->y][pos->x + 1] == ' ') {
         direction = RIGHT;
-    } else 
-    if ((pos->y - 1) >= 0 && maze->matrix[pos->y-1][pos->x] == ' ') {
+    } else if ((pos->y - 1) >= 0 && maze->matrix[pos->y-1][pos->x] == ' ') {
         direction = UP;
-    } else 
-    if ((pos->x - 1) >= 0 && maze->matrix[pos->y][pos->x - 1] == ' ') {
+    } else if ((pos->x - 1) >= 0 && maze->matrix[pos->y][pos->x - 1] == ' ') {
         direction = LEFT;
     }
-    /*else
-    if ((pos->x - 1) >= 0 && maze->matrix[pos->y][pos->x - 1] == '*') {
-        direction = 3;
-    }
-    else
-    if ((pos->y - 1) >= 0 && maze->matrix[pos->y-1][pos->x] == '*') {
-        direction = 2;
-    }
-    else
-    if ((pos->x + 1) < maze->line_length && maze->matrix[pos->y][pos->x + 1] == '*') {
-        direction = 1;
-    }
-    else
-    if ((pos->y + 1) < maze->line_count && maze->matrix[pos->y + 1][pos->x] == '*') {
-        direction = 0;
-    }*/
 
     return direction;
 }
