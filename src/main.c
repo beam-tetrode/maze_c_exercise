@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <string.h>
 
+#define ERROR_STR_LEN 32
 typedef struct x_y_type {
     int x;
     int y;
@@ -14,14 +15,66 @@ typedef struct matrix_type {
     int line_count;
 } matrix;
 
-// maze is a:
-// line that starts and ends with #- or E-character
-// rectangular, same lenght lines
-// only contains #-, E-, ^- and underscore characters
-// multiple exits
-int maze_sanity_check(x_y *coordinates)
+// A maze is a:
+// * Line that starts and ends with #- or E-character.
+// * Rectangular, same lenght lines.
+// * Only contains #-, E-, ^- and underscore characters
+// * Has multiple exits
+// * Only one input
+// * First and last row contains only #-, ^- and E-characters
+int maze_sanity_check(const matrix *const data_in)
 {
-    return 0;
+    char error_str[ERROR_STR_LEN];
+    const size_t row_len = strlen(data_in->matrix[0]);
+
+    for (size_t i = 1; i < data_in->line_count; i++) {
+        if (strlen(data_in->matrix[i]) != row_len) {
+            strncpy(error_str, "Row length\n", ERROR_STR_LEN);
+            goto return_exit_failure;
+        }
+    }
+
+    for (size_t i = 0; i < data_in->line_count; i++) {
+        if (data_in->matrix[i][0] != '#' && data_in->matrix[i][0] != 'E') {
+            strncpy(error_str, "Row start\n", ERROR_STR_LEN);
+            goto return_exit_failure;
+        }
+
+        if (data_in->matrix[i][row_len-1] != '#' && data_in->matrix[i][row_len-1] != 'E') {
+            strncpy(error_str, "Row end\n", ERROR_STR_LEN);
+            goto return_exit_failure;
+        }
+
+        for (size_t j = 0; j < row_len; j++) {
+            if (data_in->matrix[i][j] != '#' && data_in->matrix[i][j] != '^' &&
+                data_in->matrix[i][j] != 'E' && data_in->matrix[i][j] != ' ')
+            {
+                strncpy(error_str, "Invalid characters\n", ERROR_STR_LEN);
+                goto return_exit_failure;
+            }
+        }
+    }
+
+    for (size_t i = 0; i < row_len; i++) {
+        if (data_in->matrix[0][i] != '#' && data_in->matrix[0][i] != '^' && data_in->matrix[0][i] != 'E') {
+            strncpy(error_str, "First row is not solid\n", ERROR_STR_LEN);
+            goto return_exit_failure;
+        }
+
+        if (data_in->matrix[data_in->line_count-1][i] != '#' && data_in->matrix[data_in->line_count-1][i] != '^' &&
+            data_in->matrix[data_in->line_count-1][i] != 'E')
+        {
+            strncpy(error_str, "Last row is not solid\n", ERROR_STR_LEN);
+            goto return_exit_failure;
+        }
+    }
+
+    return EXIT_SUCCESS;
+
+    return_exit_failure:
+        printf("Error: %s", error_str);
+        return EXIT_FAILURE;
+
 }
 
 int find_start_coordinate(const matrix *const data_in, x_y *const coordinates_out)
@@ -121,6 +174,10 @@ int main()
     matrix data = {.matrix = NULL, .line_count = 0};
 
     if (handle_file_input(&data) != EXIT_SUCCESS) {
+        return EXIT_FAILURE;
+    }
+
+    if (maze_sanity_check(&data) != EXIT_SUCCESS) {
         return EXIT_FAILURE;
     }
 
