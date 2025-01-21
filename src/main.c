@@ -1,15 +1,22 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <windows.h>
 
 #define ERROR_STR_LEN 64
 #define READ_CAPACITY 256
 
+enum direction_
+{
+    UP = 0,
+    LEFT = 1,
+    DOWN = 2,
+    RIGHT = 3
+};
+
 typedef struct x_y_type {
     int x;
     int y;
-    int x_len;
-    int y_len;
 } x_y;
 
 typedef struct matrix_type {
@@ -192,31 +199,224 @@ int handle_file_input(matrix *data_out)
         return EXIT_FAILURE;
 
 }
+int where_to_go(const matrix *const maze, const x_y *const pos)
+{
+    int direction = -1;
+    if ((pos->y + 1) < maze->line_count && maze->matrix[pos->y + 1][pos->x] == ' ') {
+        direction = DOWN;
+    } else
+    if ((pos->x + 1) < maze->line_length && maze->matrix[pos->y][pos->x + 1] == ' ') {
+        direction = RIGHT;
+    } else 
+    if ((pos->y - 1) >= 0 && maze->matrix[pos->y-1][pos->x] == ' ') {
+        direction = UP;
+    } else 
+    if ((pos->x - 1) >= 0 && maze->matrix[pos->y][pos->x - 1] == ' ') {
+        direction = LEFT;
+    }
+    /*else
+    if ((pos->x - 1) >= 0 && maze->matrix[pos->y][pos->x - 1] == '*') {
+        direction = 3;
+    }
+    else
+    if ((pos->y - 1) >= 0 && maze->matrix[pos->y-1][pos->x] == '*') {
+        direction = 2;
+    }
+    else
+    if ((pos->x + 1) < maze->line_length && maze->matrix[pos->y][pos->x + 1] == '*') {
+        direction = 1;
+    }
+    else
+    if ((pos->y + 1) < maze->line_count && maze->matrix[pos->y + 1][pos->x] == '*') {
+        direction = 0;
+    }*/
+
+    return direction;
+}
+
+int move_up(const matrix *const maze, x_y *pos)
+{
+    if ((pos->y - 1) >= 0 &&
+    (maze->matrix[pos->y-1][pos->x] == ' ') || (maze->matrix[pos->y-1][pos->x] == '*'))
+    {
+        pos->y--;
+        return 1;
+    }
+    return 0;
+}
+int move_left(const matrix *const maze, x_y *pos)
+{
+    if ((pos->x - 1) >= 0 &&
+    (maze->matrix[pos->y][pos->x - 1] == ' ') || (maze->matrix[pos->y][pos->x - 1] == '*'))
+    {
+        pos->x--;
+        return 1;
+    }
+    return 0;
+}
+int move_down(const matrix *const maze, x_y *pos)
+{
+    if ((pos->y + 1) < maze->line_count && 
+        (maze->matrix[pos->y + 1][pos->x] == ' ') || (maze->matrix[pos->y + 1][pos->x] == '*'))
+    {
+        pos->y++;
+        return 1;
+    }
+    return 0;
+}
+int move_right(const matrix *const maze, x_y *pos)
+{
+    if ((pos->x + 1) < maze->line_length &&
+        (maze->matrix[pos->y][pos->x + 1] == ' ') || (maze->matrix[pos->y][pos->x + 1] == '*'))
+    {
+        pos->x++;
+        return 1;
+    }
+    return 0;
+}
+
+int move_algorithm(int moves, matrix *const maze, x_y pos)
+{
+    char error_str[ERROR_STR_LEN];
+    const char *direction_txt[4] = {"up\n", "left\n", "down\n", "right\n"};
+
+    int (*move_fPtr[4])(const matrix *const maze, x_y *pos);
+    move_fPtr[UP] = move_up;
+    move_fPtr[LEFT] = move_left;
+    move_fPtr[DOWN] = move_down;
+    move_fPtr[RIGHT] = move_right;
+
+    int moved = 0;
+    int direction = UP;
+    int route_back[200] = {0};
+    int route_back_index = 0;
+
+    route_back[route_back_index] = direction;
+    route_back_index++;
+    int go_back = 0;
+
+    while (moves)
+    {
+        direction = where_to_go(maze, &pos);
+        if (direction == -1) {
+            go_back = 1;
+            direction = route_back[route_back_index];
+            route_back_index--;
+            if (direction == UP) direction = DOWN;
+            else if (direction == DOWN) direction = UP;
+            else if (direction == LEFT) direction = RIGHT;
+            else if (direction == RIGHT) direction = LEFT;
+        } else {
+            go_back = 0;
+        }
+
+        maze->matrix[pos.y][pos.x] = '*';
+        moved = (*move_fPtr[direction])(maze, &pos);
+        if (moved)
+        {
+            moves--;
+            if (!go_back) {
+                route_back[route_back_index] = direction;
+                route_back_index++;
+            }
+            maze->matrix[pos.y][pos.x] = '^';
+            /*for (int i = 0; i < maze->line_count; i++) {
+                printf("%s\n", maze->matrix[i]);
+            }*/
+            //Sleep(1000);
+        }
+    }
+
+    return EXIT_SUCCESS;
+
+    return_exit_failure:
+        printf("Error: %s", error_str);
+        return EXIT_FAILURE;
+}
+
+int move_in_maze(int moves, const matrix *const data_in, x_y *const coordinates)
+{
+    char error_str[ERROR_STR_LEN];
+
+    matrix data = {.matrix = NULL, .line_count = data_in->line_count, .line_length = data_in->line_length};
+
+    data.matrix = (char**)malloc(READ_CAPACITY * sizeof(char *));
+    if (data.matrix == NULL) {
+        strncpy(error_str, "Allocating memory for matrix.\n", ERROR_STR_LEN);
+        goto return_exit_failure;
+    }
+    size_t lenght = strlen(data_in->matrix[0]) + 1;
+
+    for (size_t i = 0; i < data.line_count; i++) {
+        data.matrix[i] = malloc(lenght * sizeof(char));
+        if (data.matrix[i] == NULL) {
+            strncpy(error_str, "Allocating memory for matrix row.\n", ERROR_STR_LEN);
+            goto return_exit_failure;
+        }
+        strncpy(data.matrix[i], data_in->matrix[i], lenght);
+    }
+
+    if (move_algorithm(moves, &data, *coordinates) != EXIT_SUCCESS) {
+        strncpy(error_str, "Algorithm.\n", ERROR_STR_LEN);
+        goto return_exit_failure;
+    }
+
+    printf("\n");
+    for (int i = 0; i < data.line_count; i++) {
+        printf("%s\n", data.matrix[i]);
+        free(data.matrix[i]);
+    }
+    printf("\n");
+    free(data.matrix);
+
+    return EXIT_SUCCESS;
+
+    return_exit_failure:
+        for (int i = 0; i < data.line_count; i++) {
+            free(data.matrix[i]);
+        }
+        free(data.matrix);
+        printf("Error: %s", error_str);
+        return EXIT_FAILURE;
+}
 
 int main()
 {
     matrix data = {.matrix = NULL, .line_count = 0};
+    x_y coordinates = {-1, -1};
+    const int tries = 3;
+    const int moves[3] = {20, 150, 200};
 
     if (handle_file_input(&data) != EXIT_SUCCESS) {
-        return EXIT_FAILURE;
+        goto return_exit_failure;
     }
 
     if (maze_sanity_check(&data) != EXIT_SUCCESS) {
-        return EXIT_FAILURE;
+        goto return_exit_failure;
     }
 
-    x_y coordinates = {-1, -1};
     if (find_start_coordinate(&data, &coordinates) != EXIT_SUCCESS) {
-        return EXIT_FAILURE;
+        goto return_exit_failure;
+    }
+
+    for (size_t i = 0; i < tries; i++) {
+        if (move_in_maze(moves[i], &data, &coordinates) != EXIT_SUCCESS) {
+            goto return_exit_failure;
+        }
     }
 
     for (int i = 0; i < data.line_count; i++) {
-        #ifdef DEBUG
-            printf("%s\n", data.matrix[i]);            
-        #endif
-        free(data.matrix[i]); // Remeber this or all hell is loose
+        free(data.matrix[i]);
     }
     free(data.matrix);
 
     return EXIT_SUCCESS;
+
+    return_exit_failure:
+        for (int i = 0; i < data.line_count; i++) {
+            free(data.matrix[i]);
+        }
+        free(data.matrix);
+
+        return EXIT_FAILURE;
 }
