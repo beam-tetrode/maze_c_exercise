@@ -218,7 +218,6 @@ int handle_file_input(matrix *data_out)
 
 //*****************************************************************************/
 // Check the possible move directions
-// * return random first possible free direction
 // * If not possible to move return -1
 //
 //*****************************************************************************/
@@ -226,35 +225,23 @@ int where_to_go(const matrix *const maze, const x_y *const pos)
 {
     int direction = -1;
 
-    if ((pos->x - 1) >= 0 && maze->matrix[pos->y][pos->x - 1] == 'E') {
+    // 1. priority: check for Exit
+    // 2. priority: check for free position
+    if (pos->x - 1 >= 0 && maze->matrix[pos->y][pos->x - 1] == 'E') {
         direction = LEFT;
-    }
-    else
-    if ((pos->y - 1) >= 0 && maze->matrix[pos->y - 1][pos->x] == 'E') {
+    } else if (pos->y - 1 >= 0 && maze->matrix[pos->y - 1][pos->x] == 'E') {
         direction = UP;
-    }
-    else
-    if ((pos->x + 1) < maze->line_length && maze->matrix[pos->y][pos->x + 1] == 'E') {
+    } else if (pos->x + 1 < maze->line_length && maze->matrix[pos->y][pos->x + 1] == 'E') {
         direction = RIGHT;
-    }
-    else
-    if ((pos->y + 1) < maze->line_count && maze->matrix[pos->y + 1][pos->x] == 'E') {
+    } else if (pos->y + 1 < maze->line_count && maze->matrix[pos->y + 1][pos->x] == 'E') {
         direction = DOWN;
-    }
-    else
-    if ((pos->x - 1) >= 0 && maze->matrix[pos->y][pos->x - 1] == ' ') {
+    } else if (pos->x - 1 >= 0 && maze->matrix[pos->y][pos->x - 1] == ' ') {
         direction = LEFT;
-    }
-    else
-    if ((pos->y - 1) >= 0 && maze->matrix[pos->y-1][pos->x] == ' ') {
+    } else if (pos->y - 1 >= 0 && maze->matrix[pos->y-1][pos->x] == ' ') {
         direction = UP;
-    }
-    else
-    if ((pos->x + 1) < maze->line_length && maze->matrix[pos->y][pos->x + 1] == ' ') {
+    } else if (pos->x + 1 < maze->line_length && maze->matrix[pos->y][pos->x + 1] == ' ') {
         direction = RIGHT;
-    }
-    else
-    if ((pos->y + 1) < maze->line_count && maze->matrix[pos->y + 1][pos->x] == ' ') {
+    } else if (pos->y + 1 < maze->line_count && maze->matrix[pos->y + 1][pos->x] == ' ') {
         direction = DOWN;
     }
 
