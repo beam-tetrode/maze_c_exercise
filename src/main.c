@@ -225,7 +225,7 @@ int handle_file_input(matrix *data_out)
 int where_to_go(const matrix *const maze, const x_y *const pos)
 {
     int direction = -1;
-    int possible[4] = {0};
+    /*int possible[4] = {0};
     int count = 0;
 
     if ((pos->y - 1) >= 0 && maze->matrix[pos->y-1][pos->x] == ' ') {
@@ -246,17 +246,41 @@ int where_to_go(const matrix *const maze, const x_y *const pos)
         // get random number 0 to count
         int random = rand() % (count + 1);
         direction = possible[random];
-    }
-
-    /*if ((pos->y + 1) < maze->line_count && maze->matrix[pos->y + 1][pos->x] == ' ') {
-        direction = DOWN;
-    } else if ((pos->x + 1) < maze->line_length && maze->matrix[pos->y][pos->x + 1] == ' ') {
-        direction = RIGHT;
-    } else if ((pos->y - 1) >= 0 && maze->matrix[pos->y-1][pos->x] == ' ') {
-        direction = UP;
-    } else if ((pos->x - 1) >= 0 && maze->matrix[pos->y][pos->x - 1] == ' ') {
-        direction = LEFT;
     }*/
+    if ((pos->x - 1) >= 0 && maze->matrix[pos->y][pos->x - 1] == 'E') {
+        direction = LEFT;
+        printf("E found. Direction %d\n", direction);
+    }
+    else
+    if ((pos->y - 1) >= 0 && maze->matrix[pos->y - 1][pos->x] == 'E') {
+        direction = UP;
+        printf("E found. Direction %d\n", direction);
+    }
+    else
+    if ((pos->x + 1) < maze->line_length && maze->matrix[pos->y][pos->x + 1] == 'E') {
+        direction = RIGHT;
+        printf("E found. Direction %d\n", direction);
+    }
+    else
+    if ((pos->y + 1) < maze->line_count && maze->matrix[pos->y + 1][pos->x] == 'E') {
+        direction = DOWN;
+    }
+    else
+    if ((pos->x - 1) >= 0 && maze->matrix[pos->y][pos->x - 1] == ' ') {
+        direction = LEFT;
+    }
+    else
+    if ((pos->y - 1) >= 0 && maze->matrix[pos->y-1][pos->x] == ' ') {
+        direction = UP;
+    }
+    else
+    if ((pos->x + 1) < maze->line_length && maze->matrix[pos->y][pos->x + 1] == ' ') {
+        direction = RIGHT;
+    }
+    else
+    if ((pos->y + 1) < maze->line_count && maze->matrix[pos->y + 1][pos->x] == ' ') {
+        direction = DOWN;
+    }
 
     return direction;
 }
@@ -268,7 +292,7 @@ int where_to_go(const matrix *const maze, const x_y *const pos)
 int move_up(const matrix *const maze, x_y *pos)
 {
     if ((pos->y - 1) >= 0 &&
-    (maze->matrix[pos->y-1][pos->x] == ' ') || (maze->matrix[pos->y-1][pos->x] == '*'))
+    (maze->matrix[pos->y-1][pos->x] == ' ') || (maze->matrix[pos->y-1][pos->x] == '*') || (maze->matrix[pos->y-1][pos->x] == 'E'))
     {
         pos->y--;
         return 1;
@@ -279,7 +303,7 @@ int move_up(const matrix *const maze, x_y *pos)
 int move_left(const matrix *const maze, x_y *pos)
 {
     if ((pos->x - 1) >= 0 &&
-    (maze->matrix[pos->y][pos->x - 1] == ' ') || (maze->matrix[pos->y][pos->x - 1] == '*'))
+    (maze->matrix[pos->y][pos->x - 1] == ' ') || (maze->matrix[pos->y][pos->x - 1] == '*') || (maze->matrix[pos->y][pos->x - 1] == 'E'))
     {
         pos->x--;
         return 1;
@@ -290,7 +314,7 @@ int move_left(const matrix *const maze, x_y *pos)
 int move_down(const matrix *const maze, x_y *pos)
 {
     if ((pos->y + 1) < maze->line_count && 
-        (maze->matrix[pos->y + 1][pos->x] == ' ') || (maze->matrix[pos->y + 1][pos->x] == '*'))
+        (maze->matrix[pos->y + 1][pos->x] == ' ') || (maze->matrix[pos->y + 1][pos->x] == '*') || (maze->matrix[pos->y + 1][pos->x] == 'E'))
     {
         pos->y++;
         return 1;
@@ -301,7 +325,7 @@ int move_down(const matrix *const maze, x_y *pos)
 int move_right(const matrix *const maze, x_y *pos)
 {
     if ((pos->x + 1) < maze->line_length &&
-        (maze->matrix[pos->y][pos->x + 1] == ' ') || (maze->matrix[pos->y][pos->x + 1] == '*'))
+        (maze->matrix[pos->y][pos->x + 1] == ' ') || (maze->matrix[pos->y][pos->x + 1] == '*') || (maze->matrix[pos->y][pos->x + 1] == 'E'))
     {
         pos->x++;
         return 1;
@@ -355,8 +379,10 @@ int move_algorithm(int moves, matrix *const maze, x_y pos)
     route_back_index++;
     int go_back = 0;
 
+    // TODO: go straight if possible
+    // TODO: mark dead ends
+
     while (moves) {
-        // TODO: Still false: only evaluate if not possible to go straight
         direction = where_to_go(maze, &pos);
         if (direction == CANT_MOVE) {
             go_back = 1;
@@ -373,30 +399,27 @@ int move_algorithm(int moves, matrix *const maze, x_y pos)
             go_back = 0;
         }
 
-        if (maze->matrix[pos.y][pos.x] == 'E') {
-            printf("Freedom at last!\n");
-            break;
-        } else {
-            maze->matrix[pos.y][pos.x] = '*';
-        }
+        maze->matrix[pos.y][pos.x] = '*';
 
         if ((*move_fPtr[direction])(maze, &pos)) {
             moves--;
-            #ifdef DEBUG
-                printf("Moves left %d\n", moves);
-            #endif
             if (go_back == 0) {
                 route_back[route_back_index] = direction;
                 route_back_index++;
             }
-            maze->matrix[pos.y][pos.x] = '^';
+            if (maze->matrix[pos.y][pos.x] == 'E') {
+                maze->matrix[pos.y][pos.x] = '^';
+                printf("Freedom at last!\n");
+                break;
+            } else {
+                maze->matrix[pos.y][pos.x] = '^';
+            }
             #ifdef DEBUG
                 for (int i = 0; i < maze->line_count; i++) {
                     printf("%s\n", maze->matrix[i]);
                 }
+                Sleep(250);
             #endif
-
-            //Sleep(1000);
         }
     }
 
