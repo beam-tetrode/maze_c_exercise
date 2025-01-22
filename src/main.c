@@ -225,41 +225,17 @@ int handle_file_input(matrix *data_out)
 int where_to_go(const matrix *const maze, const x_y *const pos)
 {
     int direction = -1;
-    /*int possible[4] = {0};
-    int count = 0;
 
-    if ((pos->y - 1) >= 0 && maze->matrix[pos->y-1][pos->x] == ' ') {
-        possible[count] = UP;
-        count++;
-    } else if ((pos->x - 1) >= 0 && maze->matrix[pos->y][pos->x - 1] == ' ') {
-        possible[count] = LEFT;
-        count++;
-    } else if ((pos->y + 1) < maze->line_count && maze->matrix[pos->y + 1][pos->x] == ' ') {
-        possible[count] = DOWN;
-        count++;
-    } else if ((pos->x + 1) < maze->line_length && maze->matrix[pos->y][pos->x + 1] == ' ') {
-        possible[count] = RIGHT;
-        count++;
-    }
-
-    if (count > 0) {
-        // get random number 0 to count
-        int random = rand() % (count + 1);
-        direction = possible[random];
-    }*/
     if ((pos->x - 1) >= 0 && maze->matrix[pos->y][pos->x - 1] == 'E') {
         direction = LEFT;
-        printf("E found. Direction %d\n", direction);
     }
     else
     if ((pos->y - 1) >= 0 && maze->matrix[pos->y - 1][pos->x] == 'E') {
         direction = UP;
-        printf("E found. Direction %d\n", direction);
     }
     else
     if ((pos->x + 1) < maze->line_length && maze->matrix[pos->y][pos->x + 1] == 'E') {
         direction = RIGHT;
-        printf("E found. Direction %d\n", direction);
     }
     else
     if ((pos->y + 1) < maze->line_count && maze->matrix[pos->y + 1][pos->x] == 'E') {
