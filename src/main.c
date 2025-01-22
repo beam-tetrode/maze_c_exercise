@@ -291,44 +291,50 @@ int where_to_go(const matrix *const maze, const x_y *const pos)
 //*****************************************************************************/
 int move_up(const matrix *const maze, x_y *pos)
 {
-    if ((pos->y - 1) >= 0 &&
-    (maze->matrix[pos->y-1][pos->x] == ' ') || (maze->matrix[pos->y-1][pos->x] == '*') || (maze->matrix[pos->y-1][pos->x] == 'E'))
-    {
-        pos->y--;
-        return 1;
+    if (pos->y - 1 >= 0) {
+        char next_step = maze->matrix[pos->y-1][pos->x];
+
+        if (next_step == ' ' || next_step == '*' || next_step == 'E') {
+            pos->y--;
+            return 1;
+        }
     }
     return 0;
 }
 
 int move_left(const matrix *const maze, x_y *pos)
 {
-    if ((pos->x - 1) >= 0 &&
-    (maze->matrix[pos->y][pos->x - 1] == ' ') || (maze->matrix[pos->y][pos->x - 1] == '*') || (maze->matrix[pos->y][pos->x - 1] == 'E'))
-    {
-        pos->x--;
-        return 1;
+    if ((pos->x - 1) >= 0) {
+        char next_step = maze->matrix[pos->y][pos->x - 1];
+
+        if (next_step == ' ' || next_step == '*' || next_step == 'E') {
+            pos->x--;
+            return 1;
+        }
     }
     return 0;
 }
 
 int move_down(const matrix *const maze, x_y *pos)
 {
-    if ((pos->y + 1) < maze->line_count && 
-        (maze->matrix[pos->y + 1][pos->x] == ' ') || (maze->matrix[pos->y + 1][pos->x] == '*') || (maze->matrix[pos->y + 1][pos->x] == 'E'))
-    {
-        pos->y++;
-        return 1;
+    if ((pos->y + 1) < maze->line_count) {
+        char next_step = maze->matrix[pos->y + 1][pos->x];
+        if (next_step == ' ' || next_step == '*' || next_step == 'E') {
+            pos->y++;
+            return 1;
+        }
     }
     return 0;
 }
 
 int move_right(const matrix *const maze, x_y *pos)
 {
-    if ((pos->x + 1) < maze->line_length &&
-        (maze->matrix[pos->y][pos->x + 1] == ' ') || (maze->matrix[pos->y][pos->x + 1] == '*') || (maze->matrix[pos->y][pos->x + 1] == 'E'))
-    {
-        pos->x++;
-        return 1;
+    if ((pos->x + 1) < maze->line_length) {
+        char next_step = maze->matrix[pos->y][pos->x + 1];
+        if (next_step == ' ' || next_step == '*' || next_step == 'E') {
+            pos->x++;
+            return 1;
+        }
     }
     return 0;
 }
