@@ -5,6 +5,7 @@
 
 #define ERROR_STR_LEN 64
 #define READ_CAPACITY 256
+#define MAX_MOVES 200
 
 enum direction_state {
     UP = 0,
@@ -332,7 +333,6 @@ int step_back(int direction)
 int move_algorithm(int moves, matrix *const maze, x_y pos)
 {
     char error_str[ERROR_STR_LEN];
-    const char *direction_txt[4] = {"up\n", "left\n", "down\n", "right\n"};
 
     int (*move_fPtr[4])(const matrix *const maze, x_y *pos);
     move_fPtr[UP] = move_up;
@@ -341,15 +341,12 @@ int move_algorithm(int moves, matrix *const maze, x_y pos)
     move_fPtr[RIGHT] = move_right;
 
     int direction = UP;
-    int route_back[200] = {0};
+    int route_back[MAX_MOVES] = {0};
     int route_back_index = 0;
 
     route_back[route_back_index] = direction;
     route_back_index++;
     int go_back = 0;
-
-    // TODO: go straight if possible
-    // TODO: mark dead ends
 
     while (moves) {
         direction = where_to_go(maze, &pos);
@@ -357,11 +354,9 @@ int move_algorithm(int moves, matrix *const maze, x_y pos)
             go_back = 1;
             direction = step_back(route_back[route_back_index]);
             route_back_index--;
-            // TODO
             if (route_back_index < 0) {
-                #ifdef DEBUG
-                    printf("Error route back index less than zero\n");
-                #endif
+                strncpy(error_str, "Route back index less than zero.\n", ERROR_STR_LEN);
+                goto return_exit_failure;
                 break;
             }
         } else {
@@ -444,7 +439,6 @@ int move_in_maze(int moves, const matrix *const data_in, x_y *const coordinates)
         #endif
     }
 
-    printf("\n");
     for (int i = 0; i < data.line_count; i++) {
         printf("%s\n", data.matrix[i]);
         free(data.matrix[i]);
@@ -464,7 +458,7 @@ int main()
     matrix data = {.matrix = NULL, .line_count = 0};
     x_y coordinates = {-1, -1};
     const int tries = 3;
-    const int moves[3] = {20, 150, 200};
+    const int moves[3] = {20, 150, MAX_MOVES};
 
     if (handle_file_input(&data) != EXIT_SUCCESS) {
         goto return_exit_failure;
