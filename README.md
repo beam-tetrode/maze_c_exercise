@@ -1,6 +1,6 @@
-# maze_c_exercise
+# Exercise
 
-## Maze exercise rules:
+## Rules:
 
 Implement an algorithm to find a route through a maze given in a .txt file, or tell if there is no possible route available.
 
@@ -27,13 +27,21 @@ If it finds an exit, the operation is terminated immediately.
 The program checks the user input text-file for various errors e.g. no start, no exit, undefined shape.
 
 ### System info
-Tested with Windows Power Shell on Windows 11 Enterprise
+Program compiled and ran with Windows Power Shell on Windows 11 Enterprise
 
-Compiled with:
+Compile:
 ```bash
 gcc main.c -o maze
 ```
-or for more information
+or for more information:
 ```bash
 gcc -DDEBUG main.c -o maze
+```
+Run program:
+```
+.\maze.exe
+```
+Give path to file:
+```
+..\maze\maze2.txt
 ```
